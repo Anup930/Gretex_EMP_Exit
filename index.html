@@ -1,126 +1,50 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Gretex Exit Portal</title>
-  <style>
-    body { font-family: 'Segoe UI', sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-    
-    /* Login Box Design */
-    #login-container { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 300px; text-align: center; }
-    input { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
-    button { width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
-    button:hover { background: #218838; }
-
-    /* Dashboard Design (Hidden initially) */
-    #dashboard-container { display: none; width: 80%; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
-    .hidden { display: none; }
-    
-    .dept-badge { padding: 5px 10px; background: #007bff; color: white; border-radius: 15px; font-size: 12px; }
-  </style>
-</head>
+    <title>Login - Gretex Exit App</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="config.js"></script> </head>
 <body>
-
-  <div id="login-container">
-    <h2>🔐 Staff Login</h2>
-    <p>Please login to access checklist</p>
-    <input type="text" id="username" placeholder="Username">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="login()">Login</button>
-    <p id="login-msg" style="color:red; font-size: 12px;"></p>
-  </div>
-
-  <div id="dashboard-container">
-    <div class="header">
-      <h2>👋 Welcome, <span id="user-role-display">User</span></h2>
-      <button onclick="logout()" style="width: auto; background: #dc3545;">Logout</button>
+    <div class="login-box">
+        <h2>Gretex Staff Login</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="handleLogin()">Login</button>
+        <p id="msg" style="color:red"></p>
     </div>
 
-    <div id="content-area">
-      <div id="hr-view" class="hidden">
-        <h3>HR Dashboard</h3>
-        <button onclick="alert('Exit Initiate Form Khulega')">+ Initiate New Exit</button>
-        <p>List of all employees leaving...</p>
-        </div>
+    <script>
+        function handleLogin() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            const btn = document.querySelector('button');
+            const msg = document.getElementById('msg');
 
-      <div id="it-view" class="hidden">
-        <h3>IT Dept Checklist</h3>
-        <p>Pending Clearances:</p>
-        <ul>
-          <li>Rohan (Laptop Pending) <input type="checkbox"> Mark Done</li>
-        </ul>
-      </div>
+            btn.innerText = "Checking...";
 
-      <div id="accounts-view" class="hidden">
-        <h3>Accounts Clearance</h3>
-        <p>Pending Dues:</p>
-      </div>
-    </div>
-  </div>
+            fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'login', username: u, password: p })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Browser me role save kar lo
+                    sessionStorage.setItem('userRole', data.role);
+                    sessionStorage.setItem('userName', u);
 
-  <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxM4m4g4cgeKXSA2CF6uhJ42OJuYgdYr-JRFmqTbqH7_p51VAWrk9hoY6IWhE8gE1bMdQ/exec'; // Yahan naya URL dalo
-
-    function login() {
-      const user = document.getElementById('username').value;
-      const pass = document.getElementById('password').value;
-      const btn = document.querySelector('button');
-      const msg = document.getElementById('login-msg');
-
-      if(!user || !pass) {
-        msg.innerText = "Bhai details to dalo!";
-        return;
-      }
-
-      btn.innerText = "Checking...";
-      
-      // Backend call
-      fetch(SCRIPT_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'login', username: user, password: pass })
-      })
-      .then(res => res.json())
-      .then(data => {
-        btn.innerText = "Login";
-        
-        if (data.success) {
-          // Login Pass ho gaya!
-          showDashboard(data.role);
-        } else {
-          // Login Fail
-          msg.innerText = data.message;
+                    // REDIRECT LOGIC (Alag files par bhejo)
+                    if(data.role === 'HR') window.location.href = 'hr_dashboard.html';
+                    else if(data.role === 'IT') window.location.href = 'it_dashboard.html';
+                    else if(data.role === 'Accounts') window.location.href = 'accounts_dashboard.html';
+                    else if(data.role === 'Admin') window.location.href = 'admin_dashboard.html';
+                    
+                } else {
+                    msg.innerText = data.message;
+                    btn.innerText = "Login";
+                }
+            });
         }
-      })
-      .catch(err => {
-        console.error(err);
-        msg.innerText = "Server error aa gaya bhai.";
-        btn.innerText = "Login";
-      });
-    }
-
-    function showDashboard(role) {
-      // Login box chupao, Dashboard dikhao
-      document.getElementById('login-container').style.display = 'none';
-      document.getElementById('dashboard-container').style.display = 'block';
-      document.getElementById('user-role-display').innerText = role;
-
-      // Role ke hisab se content dikhao
-      if (role === 'HR') {
-        document.getElementById('hr-view').classList.remove('hidden');
-      } else if (role === 'IT') {
-        document.getElementById('it-view').classList.remove('hidden');
-      } else if (role === 'Accounts') {
-        document.getElementById('accounts-view').classList.remove('hidden');
-      }
-      
-      // Future me yahan data fetch function call hoga
-      // loadEmployeeData(); 
-    }
-
-    function logout() {
-      location.reload(); // Page refresh kar do, simple logout :)
-    }
-  </script>
-
+    </script>
 </body>
 </html>
