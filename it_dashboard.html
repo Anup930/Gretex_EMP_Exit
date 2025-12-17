@@ -8,40 +8,58 @@
 <body>
     <script>checkSession('IT');</script>
 
-    <div class="navbar">
-        <h3>IT Department Clearance</h3>
-        <button onclick="logout()" class="btn-red">Logout</button>
-    </div>
-
     <div class="container">
-        <h3>Pending Clearances</h3>
-        <div id="employee-list">
-            <div class="card">
-                <h4>Anup Singh (ID: 101)</h4>
-                <label><input type="checkbox" onchange="updateTask('101', 'Laptop')"> Laptop Collected</label><br>
-                <label><input type="checkbox" onchange="updateTask('101', 'Email')"> Email Deactivated</label>
-            </div>
+        <div class="navbar">
+            <h2>IT Department Checklist</h2>
+            <button onclick="logout()" class="btn-red">Logout</button>
         </div>
+
+        <div id="loading">Loading Tasks...</div>
+        <div id="taskList"></div>
     </div>
 
     <script>
-        function logout() {
-            sessionStorage.clear();
-            window.location.href = 'index.html';
-        }
+        function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
 
-        function updateTask(empId, task) {
-            // Checkbox tick karne par Google Sheet update karo
+        // Load employees
+        fetch(API_URL + '?op=getEmployees')
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('loading').style.display = 'none';
+            const container = document.getElementById('taskList');
+            
+            data.forEach(emp => {
+                // Check current status from DB
+                const laptopDone = emp.checklist.find(c => c.dept=='IT' && c.task=='Laptop' && c.status===true);
+                const emailDone = emp.checklist.find(c => c.dept=='IT' && c.task=='Email' && c.status===true);
+
+                const card = `
+                <div class="card">
+                    <h4>${emp.name} (ID: ${emp.empId})</h4>
+                    <label>
+                        <input type="checkbox" onchange="update('${emp.empId}', 'Laptop', this)" ${laptopDone ? 'checked' : ''}> 
+                        Collect Laptop
+                    </label><br>
+                    <label>
+                        <input type="checkbox" onchange="update('${emp.empId}', 'Email', this)" ${emailDone ? 'checked' : ''}> 
+                        Deactivate Email
+                    </label>
+                </div>`;
+                container.innerHTML += card;
+            });
+        });
+
+        function update(id, task, checkbox) {
             fetch(API_URL, {
                 method: 'POST',
                 body: JSON.stringify({
-                    action: 'updateChecklist',
-                    department: 'IT',
-                    empId: empId,
-                    item: task,
-                    status: true // or false based on check
+                    action: 'updateTask',
+                    dept: 'IT',
+                    empId: id,
+                    task: task,
+                    status: checkbox.checked
                 })
-            }).then(res => console.log("Saved"));
+            }).then(res => console.log('Saved'));
         }
     </script>
 </body>
