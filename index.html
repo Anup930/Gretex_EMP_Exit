@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Gretex Exit Clearance App</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .card { border: 1px solid #ccc; padding: 15px; margin: 10px 0; border-radius: 5px; }
+    .department-section { display: none; margin-top: 20px; }
+    .active-tab { display: block; }
+    button { cursor: pointer; padding: 10px; background: #007bff; color: white; border: none; }
+    .hidden { display: none; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+
+  <h1>Gretex Exit Clearance Portal</h1>
+
+  <label>Select Role:</label>
+  <select id="roleSelect" onchange="changeView()">
+    <option value="HR">HR Manager</option>
+    <option value="IT">IT Department</option>
+    <option value="Accounts">Accounts</option>
+    <option value="Admin">Admin</option>
+  </select>
+
+  <hr>
+
+  <div id="searchSection">
+    <h3>Search Employee</h3>
+    <input type="text" id="empIdInput" placeholder="Enter Employee ID">
+    <button onclick="fetchEmployeeData()">Search</button>
+  </div>
+
+  <div id="clearanceForm" class="hidden">
+    <h2 id="empNameDisplay">Employee Name</h2>
+    <p>Status: <span id="empStatus">Exit Initiated</span></p>
+
+    <div id="IT_Section" class="card">
+      <h3>IT Department Checklist</h3>
+      <label><input type="checkbox" data-dept="IT" onchange="updateDB(this, 'Laptop')"> Laptop Collected</label><br>
+      <label><input type="checkbox" data-dept="IT" onchange="updateDB(this, 'Email')"> Email Deactivated</label>
+    </div>
+
+    <div id="Accounts_Section" class="card">
+      <h3>Accounts Department Checklist</h3>
+      <label><input type="checkbox" data-dept="Accounts" onchange="updateDB(this, 'FNF')"> FNF Calculated</label><br>
+      <label><input type="checkbox" data-dept="Accounts" onchange="updateDB(this, 'Loan')"> Loan Recovered</label>
+    </div>
+
+    <div id="HR_Controls" class="card hidden">
+      <h3>HR Final Action</h3>
+      <p>Only visible to HR after all departments clear.</p>
+      <button onclick="downloadPDF()">Download Final PDF</button>
+    </div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = 'YOUR_APPS_SCRIPT_DEPLOYMENT_URL_HERE';
+
+    function changeView() {
+      // Role ke hisab se UI change karne ka logic
+      const role = document.getElementById('roleSelect').value;
+      if(role === 'HR') {
+        document.getElementById('HR_Controls').classList.remove('hidden');
+      } else {
+        document.getElementById('HR_Controls').classList.add('hidden');
+      }
+    }
+
+    function fetchEmployeeData() {
+      // Apps Script se data fetch karega
+      // Mock Data for display:
+      document.getElementById('clearanceForm').classList.remove('hidden');
+      document.getElementById('empNameDisplay').innerText = "Anup Singh";
+      alert("Fetching data from Google Sheet...");
+      
+      // Real fetch call:
+      // fetch(SCRIPT_URL + '?op=getChecklistStatus&empId=' + empId)
+      // .then(res => res.json()).then(data => { updateCheckboxes(data) });
+    }
+
+    function updateDB(checkbox, item) {
+      const role = document.getElementById('roleSelect').value;
+      const dept = checkbox.getAttribute('data-dept');
+
+      // Security Check: Agar Accounts wala IT ka box tick kare to mana karein
+      if (role !== 'HR' && role !== dept) {
+        alert("You are not authorized to check this!");
+        checkbox.checked = !checkbox.checked; // Undo check
+        return;
+      }
+
+      // Apps Script ko data bhejo
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'updateChecklist',
+          empId: '123',
+          itemId: item,
+          status: checkbox.checked,
+          department: dept
+        })
+      }).then(res => console.log("Saved to Sheet"));
+    }
+
+    function downloadPDF() {
+      const element = document.getElementById('clearanceForm');
+      var opt = {
+        margin:       0.5,
+        filename:     'Exit_Clearance_Form.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save();
+    }
+  </script>
+</body>
+</html>
