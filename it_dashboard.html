@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>IT Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="config.js"></script>
+</head>
+<body>
+    <script>checkSession('IT');</script>
+
+    <div class="navbar">
+        <h3>IT Department Clearance</h3>
+        <button onclick="logout()" class="btn-red">Logout</button>
+    </div>
+
+    <div class="container">
+        <h3>Pending Clearances</h3>
+        <div id="employee-list">
+            <div class="card">
+                <h4>Anup Singh (ID: 101)</h4>
+                <label><input type="checkbox" onchange="updateTask('101', 'Laptop')"> Laptop Collected</label><br>
+                <label><input type="checkbox" onchange="updateTask('101', 'Email')"> Email Deactivated</label>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        function updateTask(empId, task) {
+            // Checkbox tick karne par Google Sheet update karo
+            fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'updateChecklist',
+                    department: 'IT',
+                    empId: empId,
+                    item: task,
+                    status: true // or false based on check
+                })
+            }).then(res => console.log("Saved"));
+        }
+    </script>
+</body>
+</html>
